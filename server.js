@@ -11,7 +11,6 @@ const app = express();
 
 // 3. Middlewares
 app.use(cors());
-app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // 4. Multer setup
@@ -25,17 +24,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// 5. Route (AFTER app is defined!)
+// 5. Route to handle case submission
 app.post("/submit-case", upload.single("faceImage"), async (req, res) => {
   try {
-    console.log("Form Data:", req.body);
-    console.log("Uploaded Image:", req.file);
-
-    const formData = req.body;
+    // Parse the JSON-formatted case data
+    const caseData = JSON.parse(req.body.data);
     const faceImage = req.file ? req.file.filename : null;
 
+    // Merge caseData with image name
     const newCase = new Case({
-      ...formData,
+      ...caseData,
       faceImage,
     });
 
