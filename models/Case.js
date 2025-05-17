@@ -1,56 +1,74 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const caseSchema = new mongoose.Schema({
   patientInfo: {
     name: String,
     age: String,
     gender: String,
-    maritalStatus: String,
-    occupation: String,
-    address: String,
     phone: String,
-    dateOfVisit: String,
+    address: String,
+    email: String,
   },
-  chiefComplaints: [
-    {
-      complaint: String,
-      duration: String,
-      description: String,
-    },
-  ],
-  historyOfPresentIllness: String,
-  pastHistory: {
-    childhoodDiseases: String,
-    surgeriesInjuries: String,
-    majorIllnesses: String,
+  chiefComplaints: {
+    mainComplaint: String,
+    duration: String,
+    severity: String,
+    aggravatingFactors: String,
+    relievingFactors: String,
   },
-  familyHistory: String,
+  clinicalDiagnosis: {
+    primaryDiagnosis: String,
+    diagnosisNotes: String,
+  },
+  doctorObservations: {
+    generalAppearance: String,
+    physicalFindings: String,
+    emotionalState: String,
+    otherObservations: String,
+  },
+  mentalGenerals: {
+    mindState: String,
+    fearAnxiety: String,
+    sleepPatterns: String,
+  },
+  familyHistory: {
+    familyDiseases: String,
+    hereditaryConditions: String,
+    mentalIllnessHistory: String,
+    otherHistory: String,
+  },
   personalHistory: {
-    appetite: String,
-    cravingsAversions: String,
-    thirst: String,
-    bowelMovement: String,
-    urine: String,
-    sleep: String,
-    dreams: String,
-    sweat: String,
-    thermalNature: String,
     habits: String,
-    menstrualHistory: String,
+    occupation: String,
+    sleepPattern: String,
+    appetite: String,
+    thirst: String,
   },
-  mentalSymptoms: String,
-  generalRemarks: String,
-  doctorObservations: String,
-  prescription: [
-    {
-      date: String,
-      remedyName: String,
-      potency: String,
-      dose: String,
-      instructions: String,
-    },
-  ],
-  faceImageUrl: String,
+  pastHistory: {
+    pastIllnesses: String,
+    pastSurgeries: String,
+    allergies: String,
+    hospitalizations: String,
+  },
+  miasmaticDiagnosis: {
+    psora: String,
+    sycosis: String,
+    syphilis: String,
+    tubercular: String,
+  },
+  prescriptionDetails: {
+    medicine: String,
+    dosage: String,
+    frequency: String,
+  },
+  faceImage: {
+    type: String,
+    default: null,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model('Case', caseSchema);
+module.exports = mongoose.model("Case", caseSchema);
