@@ -1,12 +1,23 @@
 const mongoose = require("mongoose");
 
+// Follow-up schema
 const followUpSchema = new mongoose.Schema({
-  date: String,
-  notes: String,
+  date: {
+    type: String,
+    required: true,
+  },
+  notes: {
+    type: String,
+    required: true,
+  },
 });
 
+// Main case schema
 const caseSchema = new mongoose.Schema({
-  patientName: String,
+  patientName: {
+    type: String,
+    required: true,
+  },
   age: String,
   gender: String,
   phone: String,
@@ -23,8 +34,8 @@ const caseSchema = new mongoose.Schema({
   constitution: String,
   prescription: String,
   date: String,
-  faceImage: Buffer,
-  followUps: [followUpSchema],
+  faceImage: Buffer, // Optional: Store face image as binary data
+  followUps: [followUpSchema], // Embedded follow-ups
 });
 
 module.exports = mongoose.model("Case", caseSchema);
