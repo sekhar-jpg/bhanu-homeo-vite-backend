@@ -1,79 +1,62 @@
 const express = require('express');
 const multer = require('multer');
-const mongoose = require('mongoose');
-
+const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Connect to MongoDB
-mongoose.connect('mongodb+srv://bhanuhomeopathy:sekhar123456@cluster0.wm2pxqs.mongodb.net/?retryWrites=true&w=majority', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// Multer setup for file upload (stores files in "uploads" folder)
+// Configure multer for file upload storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, 'uploads/'); // folder to save uploaded images; create if not exists
   },
   filename: function (req, file, cb) {
-    // Save file with original name or customize
-    cb(null, Date.now() + '-' + file.originalname);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
 });
-const upload = multer({ storage });
 
-// Define your Case schema (simplified example)
-const caseSchema = new mongoose.Schema({
-  chiefComplaints: Object,
-  clinicalDiagnosis: Object,
-  doctorObservations: Object,
-  faceImagePath: String, // store uploaded image path here
-  familyHistory: Object,
-  mentalGenerals: Object,
-  miasmaticDiagnosis: Object,
-  pastHistory: Object,
-  patientInfo: Object,
-  personalHistory: Object,
-  prescriptionDetails: Object,
-});
+const upload = multer({ storage: storage });
 
-const Case = mongoose.model('Case', caseSchema);
+// Make sure uploads folder exists or create it:
+const fs = require('fs');
+const uploadDir = './uploads';
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir);
+}
 
-// Route to receive form data and file
-app.post('/submit-case', upload.single('faceImage'), async (req, res) => {
+// Route to handle form submission with file upload + JSON fields
+app.post('/submit-case', upload.single('faceImage'), (req, res) => {
   try {
-    console.log('Received file:', req.file);
-    console.log('Received body:', req.body);
+    // multer puts file info in req.file
+    const faceImage = req.file;
 
-    // req.body fields come as strings, parse JSON fields if sent as stringified JSON
-    // For example, if frontend sends patientInfo as JSON string:
-    const caseData = {
-      chiefComplaints: JSON.parse(req.body.chiefComplaints || '{}'),
-      clinicalDiagnosis: JSON.parse(req.body.clinicalDiagnosis || '{}'),
-      doctorObservations: JSON.parse(req.body.doctorObservations || '{}'),
-      faceImagePath: req.file ? req.file.path : null,
-      familyHistory: JSON.parse(req.body.familyHistory || '{}'),
-      mentalGenerals: JSON.parse(req.body.mentalGenerals || '{}'),
-      miasmaticDiagnosis: JSON.parse(req.body.miasmaticDiagnosis || '{}'),
-      pastHistory: JSON.parse(req.body.pastHistory || '{}'),
-      patientInfo: JSON.parse(req.body.patientInfo || '{}'),
-      personalHistory: JSON.parse(req.body.personalHistory || '{}'),
-      prescriptionDetails: JSON.parse(req.body.prescriptionDetails || '{}'),
-    };
+    // All other fields come in req.body as JSON strings
+    const patientInfo = JSON.parse(req.body.patientInfo || '{}');
+    const chiefComplaints = JSON.parse(req.body.chiefComplaints || '{}');
+    const pastHistory = JSON.parse(req.body.pastHistory || '{}');
+    const familyHistory = JSON.parse(req.body.familyHistory || '{}');
+    const personalHistory = JSON.parse(req.body.personalHistory || '{}');
+    const mentalGenerals = JSON.parse(req.body.mentalGenerals || '{}');
+    const miasmaticDiagnosis = JSON.parse(req.body.miasmaticDiagnosis || '{}');
+    const clinicalDiagnosis = JSON.parse(req.body.clinicalDiagnosis || '{}');
+    const doctorObservations = JSON.parse(req.body.doctorObservations || '{}');
+    const prescriptionDetails = JSON.parse(req.body.prescriptionDetails || '{}');
 
-    const newCase = new Case(caseData);
-    await newCase.save();
+    // Now you have all data and the uploaded file info.
+    // TODO: Save data to database here (MongoDB or whatever you use)
 
-    res.status(200).json({ message: 'Case saved successfully', caseId: newCase._id });
+    console.log('Received patientInfo:', patientInfo);
+    console.log('Received faceImage file:', faceImage);
+
+    res.json({ message: 'Case saved successfully!' });
   } catch (error) {
-    console.error('Error saving case:', error);
-    res.status(500).json({ message: 'Error saving case', error: error.message });
+    console.error('Error processing case:', error);
+    res.status(500).json({ message: 'Error saving case data' });
   }
 });
 
 // Start server
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
