@@ -1,8 +1,8 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import multer from 'multer';
-import dotenv from 'dotenv';
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const multer = require('multer');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
@@ -18,10 +18,10 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', () => console.log('✅ MongoDB connected'));
 
-// CORS Middleware
+// Middleware
 app.use(cors());
 
-// Multer Setup
+// Multer setup
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -50,7 +50,7 @@ const caseSchema = new mongoose.Schema({
 
 const CaseModel = mongoose.model('Case', caseSchema);
 
-// Route
+// Routes
 app.post('/submit-case', upload.single('faceImage'), async (req, res) => {
   try {
     const faceImage = req.file;
