@@ -20,12 +20,13 @@ db.once('open', () => console.log('✅ MongoDB connected'));
 
 // Middleware
 app.use(cors());
+app.use(express.json()); // For JSON body parsing
 
-// Multer setup
+// Multer setup for file uploads in memory
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Mongoose Schema
+// Mongoose Schema with followUps as subdocuments
 const caseSchema = new mongoose.Schema({
   patientInfo: Object,
   chiefComplaints: Object,
@@ -42,6 +43,12 @@ const caseSchema = new mongoose.Schema({
     contentType: String,
     filename: String,
   },
+  followUps: [
+    {
+      date: String, // format yyyy-mm-dd
+      notes: String,
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -51,6 +58,8 @@ const caseSchema = new mongoose.Schema({
 const CaseModel = mongoose.model('Case', caseSchema);
 
 // Routes
+
+// Submit new case with optional face image
 app.post('/submit-case', upload.single('faceImage'), async (req, res) => {
   try {
     const faceImage = req.file;
@@ -80,6 +89,86 @@ app.post('/submit-case', upload.single('faceImage'), async (req, res) => {
   } catch (err) {
     console.error('❌ Error saving case:', err);
     res.status(500).json({ message: 'Error saving case', error: err.message });
+  }
+});
+
+// Get all cases
+app.get('/all-cases', async (req, res) => {
+  try {
+    const cases = await CaseModel.find();
+    res.json(cases);
+  } catch (err) {
+    console.error('❌ Error fetching cases:', err);
+    res.status(500).json({ message: 'Failed to fetch cases' });
+  }
+});
+
+// Add follow-up to a case
+app.post('/add-followup/:caseId', async (req, res) => {
+  try {
+    const { date, notes } = req.body;
+    const foundCase = await CaseModel.findById(req.params.caseId);
+    if (!foundCase) return res.status(404).json({ message: 'Case not found' });
+
+    foundCase.followUps.push({ date, notes });
+    await foundCase.save();
+    res.json({ message: 'Follow-up added' });
+  } catch (err) {
+    console.error('❌ Error adding follow-up:', err);
+    res.status(500).json({ message: 'Failed to add follow-up' });
+  }
+});
+
+// Edit follow-up by caseId and followupId
+app.put('/edit-followup/:caseId/:followupId', async (req, res) => {
+  try {
+    const { date, notes } = req.body;
+    const foundCase = await CaseModel.findById(req.params.caseId);
+    if (!foundCase) return res.status(404).json({ message: 'Case not found' });
+
+    const followup = foundCase.followUps.id(req.params.followupId);
+    if (!followup) return res.status(404).json({ message: 'Follow-up not found' });
+
+    followup.date = date;
+    followup.notes = notes;
+    await foundCase.save();
+    res.json({ message: 'Follow-up updated' });
+  } catch (err) {
+    console.error('❌ Error editing follow-up:', err);
+    res.status(500).json({ message: 'Failed to edit follow-up' });
+  }
+});
+
+// Delete follow-up
+app.delete('/delete-followup/:caseId/:followupId', async (req, res) => {
+  try {
+    const foundCase = await CaseModel.findById(req.params.caseId);
+    if (!foundCase) return res.status(404).json({ message: 'Case not found' });
+
+    foundCase.followUps = foundCase.followUps.filter(
+      (f) => f._id.toString() !== req.params.followupId
+    );
+    await foundCase.save();
+    res.json({ message: 'Follow-up deleted' });
+  } catch (err) {
+    console.error('❌ Error deleting follow-up:', err);
+    res.status(500).json({ message: 'Failed to delete follow-up' });
+  }
+});
+
+// Get today's follow-up reminders
+app.get('/reminders', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+    const cases = await CaseModel.find({
+      followUps: {
+        $elemMatch: { date: today },
+      },
+    });
+    res.json(cases);
+  } catch (err) {
+    console.error('❌ Error fetching reminders:', err);
+    res.status(500).json({ message: 'Failed to get reminders' });
   }
 });
 
