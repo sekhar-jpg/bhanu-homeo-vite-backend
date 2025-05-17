@@ -1,12 +1,12 @@
 const express = require("express");
 const multer = require("multer");
 const router = express.Router();
-const Case = require("../models/Case"); // MongoDB schema
+const Case = require("../models/Case"); // Your Mongoose schema for cases
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Submit new case
+// Submit new case with optional face image
 router.post("/submit-case", upload.single("faceImage"), async (req, res) => {
   try {
     const caseData = JSON.parse(req.body.data);
@@ -35,7 +35,7 @@ router.get("/all-cases", async (req, res) => {
   }
 });
 
-// Add follow-up
+// Add a follow-up to a case by caseId
 router.post("/add-followup/:caseId", async (req, res) => {
   try {
     const { date, notes } = req.body;
@@ -50,7 +50,7 @@ router.post("/add-followup/:caseId", async (req, res) => {
   }
 });
 
-// Edit follow-up
+// Edit a follow-up by caseId and followupId
 router.put("/edit-followup/:caseId/:followupId", async (req, res) => {
   try {
     const { date, notes } = req.body;
@@ -69,7 +69,7 @@ router.put("/edit-followup/:caseId/:followupId", async (req, res) => {
   }
 });
 
-// Delete follow-up
+// Delete a follow-up by caseId and followupId
 router.delete("/delete-followup/:caseId/:followupId", async (req, res) => {
   try {
     const foundCase = await Case.findById(req.params.caseId);
@@ -85,16 +85,16 @@ router.delete("/delete-followup/:caseId/:followupId", async (req, res) => {
   }
 });
 
-// Get today's reminders
+// Get today's follow-up reminders
 router.get("/reminders", async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
     const cases = await Case.find({
       followUps: {
         $elemMatch: { date: today },
       },
     });
-    res.json(cases);
+    res.status(200).json(cases);
   } catch (err) {
     res.status(500).json({ error: "Failed to get reminders" });
   }
