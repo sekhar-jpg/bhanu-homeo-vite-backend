@@ -20,13 +20,13 @@ db.once('open', () => console.log('✅ MongoDB connected'));
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // For JSON body parsing
+app.use(express.json());
 
 // Multer setup for file uploads in memory
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Mongoose Schema with followUps as subdocuments
+// Mongoose Schema
 const caseSchema = new mongoose.Schema({
   patientInfo: Object,
   chiefComplaints: Object,
@@ -45,7 +45,7 @@ const caseSchema = new mongoose.Schema({
   },
   followUps: [
     {
-      date: String, // format yyyy-mm-dd
+      date: String,
       notes: String,
     },
   ],
@@ -57,9 +57,7 @@ const caseSchema = new mongoose.Schema({
 
 const CaseModel = mongoose.model('Case', caseSchema);
 
-// Routes
-
-// Submit new case with optional face image
+// ✅ Submit new case
 app.post('/submit-case', upload.single('faceImage'), async (req, res) => {
   try {
     const faceImage = req.file;
@@ -92,7 +90,7 @@ app.post('/submit-case', upload.single('faceImage'), async (req, res) => {
   }
 });
 
-// Get all cases
+// ✅ Get all cases
 app.get('/all-cases', async (req, res) => {
   try {
     const cases = await CaseModel.find();
@@ -103,7 +101,7 @@ app.get('/all-cases', async (req, res) => {
   }
 });
 
-// Add follow-up to a case
+// ✅ Add follow-up
 app.post('/add-followup/:caseId', async (req, res) => {
   try {
     const { date, notes } = req.body;
@@ -119,7 +117,7 @@ app.post('/add-followup/:caseId', async (req, res) => {
   }
 });
 
-// Edit follow-up by caseId and followupId
+// ✅ Edit follow-up
 app.put('/edit-followup/:caseId/:followupId', async (req, res) => {
   try {
     const { date, notes } = req.body;
@@ -139,7 +137,7 @@ app.put('/edit-followup/:caseId/:followupId', async (req, res) => {
   }
 });
 
-// Delete follow-up
+// ✅ Delete follow-up
 app.delete('/delete-followup/:caseId/:followupId', async (req, res) => {
   try {
     const foundCase = await CaseModel.findById(req.params.caseId);
@@ -156,10 +154,10 @@ app.delete('/delete-followup/:caseId/:followupId', async (req, res) => {
   }
 });
 
-// Get today's follow-up reminders
+// ✅ Get today's follow-up reminders
 app.get('/reminders', async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+    const today = new Date().toISOString().split('T')[0];
     const cases = await CaseModel.find({
       followUps: {
         $elemMatch: { date: today },
@@ -172,7 +170,34 @@ app.get('/reminders', async (req, res) => {
   }
 });
 
-// Start server
+// ✅ Edit full case
+app.put('/edit-case/:id', async (req, res) => {
+  const { id } = req.params;
+  const updatedCase = req.body;
+
+  try {
+    const result = await CaseModel.findByIdAndUpdate(id, updatedCase, { new: true });
+    res.json(result);
+  } catch (err) {
+    console.error('❌ Error editing case:', err);
+    res.status(500).json({ error: 'Failed to update case' });
+  }
+});
+
+// ✅ Delete full case
+app.delete('/delete-case/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await CaseModel.findByIdAndDelete(id);
+    res.json({ message: 'Case deleted successfully' });
+  } catch (err) {
+    console.error('❌ Error deleting case:', err);
+    res.status(500).json({ error: 'Failed to delete case' });
+  }
+});
+
+// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
