@@ -1,102 +1,30 @@
-const express = require("express");
-const multer = require("multer");
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const Case = require('../models/Case');
 const router = express.Router();
-const Case = require("../models/Case"); // Your Mongoose schema for cases
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+// Setup for multer
+const storage = multer.diskStorage({
+  destination: 'uploads/',
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
 
-// Submit new case with optional face image
-router.post("/submit-case", upload.single("faceImage"), async (req, res) => {
+// POST: /api/submit-case
+router.post('/submit-case', upload.single('faceImage'), async (req, res) => {
   try {
-    const caseData = JSON.parse(req.body.data);
-    const faceImage = req.file ? req.file.buffer : null;
+    const { name, age, gender, phone, address } = req.body;
+    const faceImageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const newCase = new Case({
-      ...caseData,
-      faceImage,
-    });
-
+    const newCase = new Case({ name, age, gender, phone, address, faceImageUrl });
     await newCase.save();
-    res.status(200).json({ message: "Case submitted successfully" });
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "Case saving failed" });
-  }
-});
 
-// Get all cases
-router.get("/all-cases", async (req, res) => {
-  try {
-    const cases = await Case.find();
-    res.status(200).json(cases);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch cases" });
-  }
-});
-
-// Add a follow-up to a case by caseId
-router.post("/add-followup/:caseId", async (req, res) => {
-  try {
-    const { date, notes } = req.body;
-    const foundCase = await Case.findById(req.params.caseId);
-    if (!foundCase) return res.status(404).json({ error: "Case not found" });
-
-    foundCase.followUps.push({ date, notes });
-    await foundCase.save();
-    res.json({ message: "Follow-up added" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to add follow-up" });
-  }
-});
-
-// Edit a follow-up by caseId and followupId
-router.put("/edit-followup/:caseId/:followupId", async (req, res) => {
-  try {
-    const { date, notes } = req.body;
-    const foundCase = await Case.findById(req.params.caseId);
-    if (!foundCase) return res.status(404).json({ error: "Case not found" });
-
-    const followup = foundCase.followUps.id(req.params.followupId);
-    if (!followup) return res.status(404).json({ error: "Follow-up not found" });
-
-    followup.date = date;
-    followup.notes = notes;
-    await foundCase.save();
-    res.json({ message: "Follow-up updated" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to edit follow-up" });
-  }
-});
-
-// Delete a follow-up by caseId and followupId
-router.delete("/delete-followup/:caseId/:followupId", async (req, res) => {
-  try {
-    const foundCase = await Case.findById(req.params.caseId);
-    if (!foundCase) return res.status(404).json({ error: "Case not found" });
-
-    foundCase.followUps = foundCase.followUps.filter(
-      (f) => f._id.toString() !== req.params.followupId
-    );
-    await foundCase.save();
-    res.json({ message: "Follow-up deleted" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete follow-up" });
-  }
-});
-
-// Get today's follow-up reminders
-router.get("/reminders", async (req, res) => {
-  try {
-    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
-    const cases = await Case.find({
-      followUps: {
-        $elemMatch: { date: today },
-      },
-    });
-    res.status(200).json(cases);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to get reminders" });
+    res.json({ success: true, message: 'Case saved successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error saving case' });
   }
 });
 
